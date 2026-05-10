@@ -263,16 +263,6 @@ public class HanziToPinyin {
             if (sInstance != null) {
                 return sInstance;
             }
-            // // Check if zh_CN collation data is available
-            // final Locale[] locale = Collator.getAvailableLocales();
-            // for (Locale value : locale) {
-            // if (value.equals(Locale.CHINA)) {
-            // sInstance = new HanziToPinyin(true);
-            // return sInstance;
-            // }
-            // }
-            // Log.w(TAG, "There is no Chinese collator, HanziToPinyin is disabled");
-            // sInstance = new HanziToPinyin(false);
             sInstance = new HanziToPinyin(true);
             return sInstance;
         }
@@ -338,7 +328,7 @@ public class HanziToPinyin {
             token.target = pinyin.toString();
             return token;
         } catch (Throwable th) {
-            Log.record("字符'" + character + "'转换失败");
+            Log.record(TAG, "字符'" + character + "'转换失败");
             throw th;
         }
     }
@@ -403,9 +393,8 @@ public class HanziToPinyin {
                 addToken(sb, tokens, tokenType);
             }
             return tokens;
-
         } catch (Throwable th) {
-            Log.record("字符串\"" + input + "\"转换失败");
+            Log.record(TAG, "字符串\"" + input + "\"转换失败");
             throw th;
         }
     }
