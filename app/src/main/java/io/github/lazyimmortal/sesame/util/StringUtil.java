@@ -1,14 +1,12 @@
 package io.github.lazyimmortal.sesame.util;
-
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Objects;
-
 public class StringUtil {
     public static boolean isEmpty(String str) {
         return str == null || str.isEmpty();
     }
-
     public static String collectionJoinString(CharSequence conjunction, Collection<?> collection) {
         if (!collection.isEmpty()) {
             StringBuilder b = new StringBuilder();
@@ -21,7 +19,6 @@ public class StringUtil {
         }
         return "";
     }
-
     public static String arrayJoinString(CharSequence conjunction, Object... array) {
         int length = array.length;
         if (length > 0) {
@@ -34,23 +31,18 @@ public class StringUtil {
         }
         return "";
     }
-
     public static String arrayToString(Object... array) {
         return arrayJoinString(",", array);
     }
-
     private static String toStringOrEmpty(Object obj) {
         return Objects.toString(obj, "");
     }
-
     public static String padLeft(int str, int totalWidth, char padChar) {
         return padLeft(String.valueOf(str), totalWidth, padChar);
     }
-
     public static String padRight(int str, int totalWidth, char padChar) {
         return padRight(String.valueOf(str), totalWidth, padChar);
     }
-
     public static String padLeft(String str, int totalWidth, char padChar) {
         StringBuilder sb = new StringBuilder(str);
         while (sb.length() < totalWidth) {
@@ -58,7 +50,6 @@ public class StringUtil {
         }
         return sb.toString();
     }
-
     public static String padRight(String str, int totalWidth, char padChar) {
         StringBuilder sb = new StringBuilder(str);
         while (sb.length() < totalWidth) {
@@ -66,19 +57,24 @@ public class StringUtil {
         }
         return sb.toString();
     }
-
     public static String getSubString(String text, String left, String right) {
-        int leftIndex = isEmpty(left) ? 0 : text.indexOf(left);
-        if (leftIndex == -1) {
-            return "";
-        } else if (!isEmpty(left)) {
-            leftIndex += left.length();
+        String result = "";
+        int zLen;
+        if (left == null || left.isEmpty()) {
+            zLen = 0;
+        } else {
+            zLen = text.indexOf(left);
+            if (zLen > -1) {
+                zLen += left.length();
+            } else {
+                zLen = 0;
+            }
         }
-        int rightIndex = isEmpty(right) ? text.length() : text.indexOf(right, leftIndex);
-        if (rightIndex == -1) {
-            return "";
+        int yLen = text.indexOf(right, zLen);
+        if (yLen < 0 || right == null || right.isEmpty()) {
+            yLen = text.length();
         }
-        return text.substring(leftIndex, rightIndex);
+        result = text.substring(zLen, yLen);
+        return result;
     }
-
 }
