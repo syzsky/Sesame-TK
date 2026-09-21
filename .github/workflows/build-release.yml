@@ -3,10 +3,10 @@ name: Build & Release APK
 on:
   push:
     branches: [ "main" ]
+    # 仅源码变更触发打包；CI/文档变更不重复构建
     paths-ignore:
       - ".github/**"
       - "**.md"
-      - ".upstream-sha"
   workflow_dispatch:
 
 permissions:
