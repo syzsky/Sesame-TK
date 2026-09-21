@@ -1,0 +1,83 @@
+name: Auto Sync & Publish
+
+on:
+  schedule:
+    # 每 3 天 UTC 02:00（北京时间 10:00）检查一次上游
+    - cron: "0 2 */3 * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "忽略 SHA 比对，强制同步一次"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  actions: write
+  pull-requests: write
+
+concurrency:
+  group: auto-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # 用 PAT 推送，否则 GITHUB_TOKEN 触发的 push 不会启动打包工作流
+          token: ${{ secrets.SYNC_PAT || github.token }}
+
+      - name: 检测上游更新
+        id: check
+        run: |
+          set -e
+          git remote add upstream https://github.com/time-wanderer/Sesame-TK.git || true
+          git fetch --depth=1 upstream main
+          UP=$(git rev-parse upstream/main)
+          CUR=$(cat .upstream-sha 2>/dev/null | tr -d '[:space:]' || echo none)
+          echo "上游=$UP 已记录=$CUR 强制=${{ inputs.force }}"
+          echo "up_sha=$UP" >> "$GITHUB_OUTPUT"
+          if [ "$UP" = "$CUR" ] && [ "${{ inputs.force }}" != "true" ]; then
+            echo "上游无新提交，跳过同步"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 拉取上游快照并同步源码（保留本仓 CI 文件）
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          set -e
+          mkdir -p /tmp/keep
+          cp .github/workflows/build-release.yml .github/workflows/auto-sync-publish.yml /tmp/keep/
+          curl -sSL --retry 3 --max-time 600 -o /tmp/up.tar.gz \
+            "https://codeload.github.com/time-wanderer/Sesame-TK/tar.gz/${{ steps.check.outputs.up_sha }}"
+          find . -mindepth 1 -maxdepth 1 -not -name .git -exec rm -rf {} +
+          tar xzf /tmp/up.tar.gz --strip-components=1 -C .
+          mkdir -p .github/workflows
+          cp /tmp/keep/*.yml .github/workflows/
+          echo "${{ steps.check.outputs.up_sha }}" > .upstream-sha
+
+      - name: 提交并推送（触发打包发布）
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          set -e
+          git config user.name "syzsky"
+          git config user.email "syzsky@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "内容与上游一致，仅更新记录，无需提交"
+          else
+            git commit -m "sync: 同步上游 Sesame-TK ${{ steps.check.outputs.up_sha }}"
+            git push
+            echo "已推送，打包发布工作流将自动触发"
+          fi
+
+      - name: 汇总
+        run: |
+          echo "上游 SHA: ${{ steps.check.outputs.up_sha }}"
+          echo "本次是否同步: ${{ steps.check.outputs.changed }}"
