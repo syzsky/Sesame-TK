@@ -3,6 +3,10 @@ name: Build & Release APK
 on:
   push:
     branches: [ "main" ]
+    paths-ignore:
+      - ".github/**"
+      - "**.md"
+      - ".upstream-sha"
   workflow_dispatch:
 
 permissions:
